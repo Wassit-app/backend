@@ -1,5 +1,7 @@
-import { PrismaClient } from '../../generated/prisma'
-import { withAccelerate } from '@prisma/extension-accelerate'
+import { PrismaClient } from '@prisma/client'
 
-// Create a new PrismaClient instance with Accelerate extension
-export const prisma = new PrismaClient().$extends(withAccelerate())
+
+// Create a new PrismaClient instance
+export const prisma = new PrismaClient({
+  log: ['query', 'info', 'warn', 'error'],
+})
