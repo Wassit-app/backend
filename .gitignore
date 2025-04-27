@@ -1,6 +1,9 @@
 # Dependency directories
 node_modules/
 jspm_packages/
+prisma/cloud
+prisma/migrations
+generated/
 
 # TypeScript output directory
 dist/
