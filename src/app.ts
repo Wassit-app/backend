@@ -13,9 +13,6 @@ app.use(express.json());
 app.use(helmet())
 
 // Routes
-app.use('/api/items',( req: Request, res: Response)=>{
-    res.json({ message: 'Hello World!' });
-});
 app.use('/api', AppRoutes);
 
 
