@@ -11,20 +11,21 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 model User {
-  id          String    @id @default(uuid())
-  username    String    @unique
-  fullName    String
-  email       String?    @unique
-  phone       String?    @unique
-  password    String
-  createdAt   DateTime  @default(now())
-  otp         String?
-  otpExpireAt DateTime?
-  isVerified  Boolean   @default(false)
-  role        Role
+  id         String    @id @default(uuid())
+  username   String    @unique
+  fullName   String
+  email      String?   @unique
+  phone      String?   @unique
+  password   String
+  otp        String?
+  expiredAt  DateTime? @default(dbgenerated("now() + interval '5 minutes'"))
+  createdAt  DateTime  @default(now())
+  isVerified Boolean   @default(false)
+  role       Role
 
   chef     Chef?
   customer Customer?
@@ -42,8 +43,8 @@ model Chef {
   id             String   @id
   address        String?
   bio            String?
-  avgReviewScore Float?    @default(0.0)
-  totalReviews   Int?      @default(0)
+  avgReviewScore Float?   @default(0.0)
+  totalReviews   Int?     @default(0)
   availableMeals String[]
   certification  String?
   user           User     @relation(fields: [id], references: [id])

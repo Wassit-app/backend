@@ -4,6 +4,7 @@ jspm_packages/
 prisma/cloud
 prisma/migrations
 generated/
+firebase-service-account.json
 
 # TypeScript output directory
 dist/

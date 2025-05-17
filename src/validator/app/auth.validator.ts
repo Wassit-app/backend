@@ -1,0 +1,40 @@
+import Joi from "joi";
+
+const baseSchema = Joi.object({
+  username: Joi.string(),
+  fullName: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+  phone: Joi.string().optional(),
+  role: Joi.string().valid("CUSTOMER", "CHEF").required(),
+
+  // Common fields
+  address: Joi.string().optional(), // used for both roles but named differently
+  otp: Joi.string().optional(),
+  otpExpireAt: Joi.date().optional(),
+});
+
+// Chef-specific schema
+const chefSchema = Joi.object({
+  bio: Joi.string(),
+  avgReviewScore: Joi.number().optional(),
+  totalReviews: Joi.number().optional(),
+  certification: Joi.string(),
+}).when(Joi.object({ role: Joi.string().valid("CHEF") }).unknown(), {
+  then: Joi.required(),
+});
+
+// Customer-specific schema
+const customerSchema = Joi.object({
+  deliveryAddress: Joi.string(),
+}).when(Joi.object({ role: Joi.string().valid("CUSTOMER") }).unknown(), {
+  then: Joi.required(),
+});
+
+export const loginSchema = Joi.object({
+  username: Joi.string().required(),
+  password: Joi.string().min(6).required(),
+})
+
+// Final schema
+export const registrationSchema = baseSchema.concat(chefSchema).concat(customerSchema);
