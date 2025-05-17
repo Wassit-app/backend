@@ -31,8 +31,14 @@ const customerSchema = Joi.object({
   then: Joi.required(),
 });
 
+export const validateRegistrationSchema = Joi.object({
+    userId: Joi.string().required(),
+    otp: Joi.string().length(4).required(),
+}).required()
+
 export const loginSchema = Joi.object({
-  username: Joi.string().required(),
+  email: Joi.string().email().required(),
+  role: Joi.string().valid("CUSTOMER", "CHEF").required(),
   password: Joi.string().min(6).required(),
 })
 
