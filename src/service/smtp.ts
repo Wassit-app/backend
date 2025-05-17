@@ -47,10 +47,9 @@ class SMTPService {
         user: string,
         otp: string
     ): Promise<void> {
-        const templatePath = path.join("./templates/app/forgetPasswordOtp.html");
+        const templatePath = path.join("./templates/forgetPasswordOtp.html");
         const subject = `Password Reset OTP for ${COMPANY_NAME} App`;
         const text = `Your password reset OTP for ${COMPANY_NAME} App is ${otp}`;
-
         return this.sendTemplatedEmail(email, user, otp, templatePath, subject, text);
     }
 }
