@@ -42,5 +42,14 @@ export const loginSchema = Joi.object({
   password: Joi.string().min(6).required(),
 })
 
+export const resetPasswordRequestSchema = Joi.object({
+    email: Joi.string().email().required(),
+}).required()
+
+export const confirmResetPasswordSchema = Joi.object({
+    email: Joi.string().email().required(),
+    otp: Joi.string().length(4).required(),
+});
+
 // Final schema
 export const registrationSchema = baseSchema.concat(chefSchema).concat(customerSchema);
