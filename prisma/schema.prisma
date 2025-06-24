@@ -50,6 +50,34 @@ model Chef {
   availableMeals String[]
   certification  String?
   user           User     @relation(fields: [id], references: [id])
+
+  meals Meal[]
+}
+
+model Meal {
+  id              String   @id @default(uuid())
+  chefId          String
+  name            String
+  description     String?
+  price           Float
+  photoUrl        String?
+  category        MealCategory
+  preparationTime Int
+  isAvailable     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  avgRating       Float?   @default(0.0)
+
+  chef            Chef     @relation(fields: [chefId], references: [id])
+}
+
+enum MealCategory {
+  SANDWICHES
+  PIZZA
+  HEALTHY
+  TRADITIONAL
+  FASTFOOD
+  DESSERT
 }
 
 enum Role {
