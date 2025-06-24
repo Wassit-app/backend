@@ -22,6 +22,8 @@ model User {
   phone      String?   @unique
   password   String
   otp        String?
+  oauthProvider  String?  // e.g., 'google' or 'facebook'
+  oauthId        String?  // the provider user ID
   expiredAt  DateTime? @default(dbgenerated("now() + interval '5 minutes'"))
   createdAt  DateTime  @default(now())
   isVerified Boolean   @default(false)

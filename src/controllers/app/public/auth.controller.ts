@@ -9,12 +9,12 @@ import TokenService from "../../../service/jwt";
 
 
 class AuthController {
-    public static register = async (req: Request, res: any, next: NextFunction) => {
+    public static register = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { value, error } = registrationSchema.validate(req.body);
 
             if (error) {
-                return next({
+                next({
                     status: 400,
                     message: error.details[0].message,
                     error: {
@@ -22,6 +22,7 @@ class AuthController {
                         details: error.details[0].message,
                     },
                 });
+                return;
             }
 
             const isEmailExist = await prisma.user.findUnique({
@@ -29,7 +30,7 @@ class AuthController {
             });
 
             if (isEmailExist && isEmailExist.isVerified) {
-                return next({
+                next({
                     status: 409,
                     message: "Email already exists",
                     error: {
@@ -37,6 +38,7 @@ class AuthController {
                         details: "The email address is already registered",
                     },
                 });
+                return;
             }
 
             const hashedPassword = HashService.hash(value.password);
@@ -106,10 +108,8 @@ class AuthController {
                         recentOrders: [],
                     },
                 });
-
             }
             await SMTPService.sendAppOTPEmail(value.email, value.name, newOtp);
-
             res.status(201).json({
                 message: "Registration successful. Please verify your email.",
                 data: {
@@ -117,8 +117,8 @@ class AuthController {
                 },
             });
         } catch (err: any) {
-            console.log(err);
-            return next({
+            console.log(err.message);
+            next({
                 status: 500,
                 message: "Internal Server Error",
                 error: {
@@ -126,14 +126,15 @@ class AuthController {
                     details: "Internal Server Error",
                 },
             });
+            return;
         }
     }
-    public static completeRegister = async (req: Request, res: any, next: NextFunction) => {
+    public static completeRegister = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { error, value } = validateRegistrationSchema.validate(req.body);
 
             if (error) {
-                return next({
+                next({
                     status: 400,
                     message: error.details[0].message,
                     error: {
@@ -141,12 +142,13 @@ class AuthController {
                         details: error.details[0].message,
                     },
                 });
+                return;
             }
 
             let userObj = await prisma.user.findUnique({ where: { id: value.userId } });
 
             if (!userObj) {
-                return next({
+                next({
                     status: 404,
                     message: "User not found",
                     error: {
@@ -154,10 +156,11 @@ class AuthController {
                         details: "No user found with the provided ID",
                     },
                 });
+                return;
             }
 
             if (userObj.isVerified) {
-                return next({
+                next({
                     status: 409,
                     message: "User account already verified",
                     error: {
@@ -165,9 +168,10 @@ class AuthController {
                         details: "The user account is already verified",
                     },
                 });
+                return;
             }
             if (value.otp !== userObj.otp) {
-                return next({
+                next({
                     status: 400,
                     message: "OTP is not correct",
                     error: {
@@ -175,10 +179,11 @@ class AuthController {
                         details: "The provided OTP is incorrect",
                     },
                 });
+                return;
             }
             const currentTime = new Date().getTime();
             if (!userObj.expiredAt || currentTime > new Date(userObj.expiredAt).getTime()) {
-                return next({
+                next({
                     status: 400,
                     message: "OTP is expired",
                     error: {
@@ -186,6 +191,7 @@ class AuthController {
                         details: "The provided OTP is expired",
                     },
                 });
+                return;
             }
 
             let user = await prisma.user.update({
@@ -217,7 +223,7 @@ class AuthController {
             });
         } catch (error) {
             console.log(error);
-            return next({
+            next({
                 status: 500,
                 message: "Internal Server Error",
                 error: {
@@ -225,13 +231,14 @@ class AuthController {
                     details: "Internal Server Error",
                 },
             });
+            return;
         }
     }
-    public static login = async (req: Request, res: any, next: NextFunction) => {
+    public static login = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { error, value } = loginSchema.validate(req.body);
             if (error) {
-                return next({
+                next({
                     status: 400,
                     message: error.details[0].message,
                     error: {
@@ -256,7 +263,7 @@ class AuthController {
             });
 
             if (!user) {
-                return next({
+                next({
                     status: 404,
                     message: "Invalid Email",
                     error: {
@@ -264,12 +271,13 @@ class AuthController {
                         details: "The provided email is incorrect",
                     },
                 });
+                return;
             }
 
             const isMatch = HashService.compare(value.password, user.password);
 
             if (!isMatch) {
-                return next({
+                next({
                     status: 401,
                     message: "Invalid password",
                     error: {
@@ -277,6 +285,7 @@ class AuthController {
                         details: "The provided password is incorrect",
                     },
                 });
+                return;
             }
 
             const { password, ...safeUser } = user;
@@ -293,7 +302,7 @@ class AuthController {
             });
         } catch (error) {
             console.log(error);
-            return next({
+            next({
                 status: 500,
                 message: "Internal Server Error",
                 error: {
@@ -301,14 +310,15 @@ class AuthController {
                     details: "Internal Server Error",
                 },
             });
+            return;
         }
     }
-    public static reqResetPassword = async (req: Request, res: any, next: NextFunction) => {
+    public static reqResetPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { error, value } = resetPasswordRequestSchema.validate(req.body);
 
             if (error) {
-                return next({
+                next({
                     status: 400,
                     message: error.details[0].message,
                     error: {
@@ -316,6 +326,7 @@ class AuthController {
                         details: error.details[0].message,
                     },
                 });
+                return;
             }
             const user = await prisma.user.findFirst({
                 where: { email: value.email },
@@ -326,7 +337,7 @@ class AuthController {
             });
 
             if (!user) {
-                return next({
+                next({
                     status: 404,
                     message: "Email not found",
                     error: {
@@ -334,6 +345,7 @@ class AuthController {
                         details: "The provided email does not exist",
                     },
                 });
+                return;
             }
 
             const newOtp = OtpGenerator(4);
@@ -357,7 +369,7 @@ class AuthController {
             });
         } catch (error) {
             console.log(error);
-            return next({
+            next({
                 status: 500,
                 message: "Internal Server Error",
                 error: {
@@ -365,15 +377,16 @@ class AuthController {
                     details: "Internal Server Error",
                 },
             });
+            return;
         }
     }
 
-    public static confirmResetPassword = async (req: Request, res: any, next: NextFunction) => {
+    public static confirmResetPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
 
             const { error, value } = confirmResetPasswordSchema.validate(req.body);
             if (error) {
-                return next({
+                next({
                     status: 400,
                     message: error.details[0].message,
                     error: {
@@ -381,6 +394,7 @@ class AuthController {
                         details: error.details[0].message,
                     },
                 });
+                return;
             }
 
             const user = await prisma.user.findUnique({
@@ -397,7 +411,7 @@ class AuthController {
             });
 
             if (!user) {
-                return next({
+                next({
                     status: 404,
                     message: "Email not found",
                     error: {
@@ -405,10 +419,11 @@ class AuthController {
                         details: "The provided email does not exist",
                     },
                 });
+                return;
             }
 
             if (user.otp !== value.otp) {
-                return next({
+                next({
                     status: 401,
                     message: "Invalid OTP",
                     error: {
@@ -416,11 +431,12 @@ class AuthController {
                         details: "The provided OTP is incorrect",
                     },
                 });
+                return;
             }
 
             const currentTime = new Date().getTime();
             if (!user.expiredAt || currentTime > user.expiredAt.getTime()) {
-                return next({
+                next({
                     status: 401,
                     message: "OTP has expired",
                     error: {
@@ -428,6 +444,7 @@ class AuthController {
                         details: "The provided OTP has expired",
                     },
                 });
+                return;
             }
 
             let finalUser = await prisma.user.update({
@@ -459,7 +476,7 @@ class AuthController {
             });
         } catch (error) {
             console.log(error);
-            return next({
+            next({
                 status: 500,
                 message: "Internal Server Error",
                 error: {
@@ -467,14 +484,15 @@ class AuthController {
                     details: "Internal Server Error",
                 },
             });
+            return;
         }
     }
-    public static checkRefreshToken = async (req: Request, res: any, next: NextFunction) => {
+    public static checkRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const token = req.header("Authorization")?.replace("Bearer ", "").trim();
 
             if (!token) {
-                return next({
+                next({
                     status: 400,
                     message: "Authorization header is missing or malformed",
                     error: {
@@ -482,6 +500,7 @@ class AuthController {
                         details: "Expected format: Bearer <refresh_token>",
                     },
                 });
+                return;
             }
 
             const tokenData = TokenService.verifyToken(token);
@@ -522,7 +541,7 @@ class AuthController {
             });
         } catch (error) {
             console.log(error);
-            return next({
+            next({
                 status: 500,
                 message: "Internal Server Error",
                 error: {
@@ -530,6 +549,7 @@ class AuthController {
                     details: "Unexpected error during token refresh",
                 },
             });
+            return;
         }
     }
 
