@@ -117,7 +117,6 @@ class AuthController {
                 },
             });
         } catch (err: any) {
-            console.log(err.message);
             next({
                 status: 500,
                 message: "Internal Server Error",
