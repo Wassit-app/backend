@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import MealController from '../../../../controllers/app/private/chef/meal.controller';
+import { isAuthenticated } from '../../../../middlewares/auth.middleware';
+import { isChef } from '../../../../middlewares/isChef.middleware';
 
 const router = Router();
 
@@ -9,3 +11,4 @@ router.get('/meals/:id', MealController.getMealById); // Assuming this is to get
 router.put('/meals/:id', MealController.updateMeal);
 router.delete('/meals/:id', MealController.deleteMeal);
 
+export default router;

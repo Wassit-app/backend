@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { mealValidator } from '../../../../validator/app/chef/meal.validator';
+import { mealValidator, updateMealValidator } from '../../../../validator/app/chef/meal.validator';
 import { prisma } from '../../../../config/prisma';
 
 class MealController {
@@ -80,34 +80,120 @@ class MealController {
     res: Response,
     next: NextFunction,
   ) => {
-    // Logic to retrieve meals
-    res.status(200).send({ meals: [] });
+    try {
+      const { chefId } = req.params;
+      const chef = await prisma.chef.findUnique({ where: { id: chefId } });
+      if (!chef) {
+        res.status(404).json({
+          message: 'Chef not found',
+          error: { code: 'CHEF_NOT_FOUND' },
+        });
+      }
+
+      const meals = await prisma.meal.findMany({
+        where: { chefId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.status(200).json({ meals });
+    } catch (error) {
+      next({
+        status: 500,
+        message: 'Internal server error',
+        error,
+      });
+    }
   };
+
   public static getMealById = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ) => {
-    // Logic to retrieve meals
-    res.status(200).send({ meals: [] });
+    try {
+      const { id } = req.params;
+      const meal = await prisma.meal.findUnique({
+        where: { id },
+      });
+      if (!meal) {
+        res.status(404).json({
+          message: 'Meal not found',
+          error: { code: 'MEAL_NOT_FOUND' },
+        });
+        return;
+      }
+      res.status(200).json({ meal });
+    } catch (error) {
+      next({
+        status: 500,
+        message: 'Internal server error',
+        error,
+      });
+    }
   };
 
-  public static updateMeal = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    // Logic to update a meal
-    res.status(200).send({ message: 'Meal updated successfully' });
+  public static updateMeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { value, error } = updateMealValidator.validate(req.body);
+      if (error) {
+        next({
+          status: 400,
+          message: error.details[0].message,
+          error: {
+            code: 'VALIDATION_ERROR',
+            details: error.details[0].message,
+          },
+        });
+        return;
+      }
+
+      const meal = await prisma.meal.findUnique({ where: { id } });
+      if (!meal) {
+        res.status(404).json({
+          message: 'Meal not found',
+          error: { code: 'MEAL_NOT_FOUND' },
+        });
+        return;
+      }
+
+      const updatedMeal = await prisma.meal.update({
+        where: { id },
+        data: value,
+      });
+
+      res.status(200).json({ message: 'Meal updated successfully', data: { meal: updatedMeal } });
+    } catch (error) {
+      next({
+        status: 500,
+        message: 'Internal server error',
+        error,
+      });
+    }
   };
 
-  public static deleteMeal = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    // Logic to delete a meal
-    res.status(200).send({ message: 'Meal deleted successfully' });
+  public static deleteMeal = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const meal = await prisma.meal.findUnique({ where: { id } });
+      if (!meal) {
+        res.status(404).json({
+          message: 'Meal not found',
+          error: { code: 'MEAL_NOT_FOUND' },
+        });
+        return;
+      }
+
+      await prisma.meal.delete({ where: { id } });
+
+      res.status(200).json({ message: 'Meal deleted successfully' });
+    } catch (error) {
+      next({
+        status: 500,
+        message: 'Internal server error',
+        error,
+      });
+    }
   };
 }
 export default MealController;
