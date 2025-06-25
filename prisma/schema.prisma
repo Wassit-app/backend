@@ -15,19 +15,19 @@ datasource db {
 }
 
 model User {
-  id         String    @id @default(uuid())
-  username   String    @unique
-  fullName   String
-  email      String?   @unique
-  phone      String?   @unique
-  password   String
-  otp        String?
-  oauthProvider  String?  // e.g., 'google' or 'facebook'
-  oauthId        String?  // the provider user ID
-  expiredAt  DateTime? @default(dbgenerated("now() + interval '5 minutes'"))
-  createdAt  DateTime  @default(now())
-  isVerified Boolean   @default(false)
-  role       Role
+  id            String    @id @default(uuid())
+  username      String    @unique
+  fullName      String
+  email         String?   @unique
+  phone         String?   @unique
+  password      String
+  otp           String?
+  oauthProvider String? // e.g., 'google' or 'facebook'
+  oauthId       String? // the provider user ID
+  expiredAt     DateTime? @default(dbgenerated("now() + interval '5 minutes'"))
+  createdAt     DateTime  @default(now())
+  isVerified    Boolean   @default(false)
+  role          Role
 
   chef     Chef?
   customer Customer?
@@ -39,6 +39,8 @@ model Customer {
   favoriteMeals   String[]
   recentOrders    String[]
   user            User     @relation(fields: [id], references: [id])
+
+  orders Order[]
 }
 
 model Chef {
@@ -51,11 +53,12 @@ model Chef {
   certification  String?
   user           User     @relation(fields: [id], references: [id])
 
-  meals Meal[]
+  meals  Meal[]
+  orders Order[]
 }
 
 model Meal {
-  id              String   @id @default(uuid())
+  id              String       @id @default(uuid())
   chefId          String
   name            String
   description     String?
@@ -63,12 +66,34 @@ model Meal {
   photoUrl        String?
   category        MealCategory
   preparationTime Int
-  isAvailable     Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  avgRating       Float?   @default(0.0)
+  isAvailable     Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  avgRating       Float?       @default(0.0)
 
-  chef            Chef     @relation(fields: [chefId], references: [id])
+  chef   Chef    @relation(fields: [chefId], references: [id])
+  orders Order[]
+}
+
+model Order {
+  id                  String        @id @default(uuid())
+  customerId          String
+  chefId              String
+  mealId              String
+  quantity            Int
+  totalPrice          Float
+  status              OrderStatus   @default(PENDING)
+  deliveryType        DeliveryType
+  deliveryAddress     String?
+  specialInstructions String?
+  paymentStatus       Boolean       @default(false)
+  paymentMethod       PaymentMethod
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  chef     Chef     @relation(fields: [chefId], references: [id])
+  meal     Meal     @relation(fields: [mealId], references: [id])
 }
 
 enum MealCategory {
@@ -83,4 +108,23 @@ enum MealCategory {
 enum Role {
   CUSTOMER
   CHEF
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum DeliveryType {
+  DELIVERY
+  PICKUP
+}
+
+enum PaymentMethod {
+  CHARGILY
+  CASH
+  CARD
 }

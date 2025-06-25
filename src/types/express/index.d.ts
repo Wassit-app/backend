@@ -1,5 +1,5 @@
 // This file extends the Express Request interface to include a user object
-export {};
+// export {};
 
 declare global {
   namespace Express {
