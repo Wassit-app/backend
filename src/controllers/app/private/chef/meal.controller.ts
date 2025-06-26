@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { mealValidator, updateMealValidator } from '../../../../validator/app/chef/meal.validator';
+import {
+  mealValidator,
+  updateMealValidator,
+} from '../../../../validator/app/chef/meal.validator';
 import { prisma } from '../../../../config/prisma';
 
 class MealController {
@@ -132,7 +135,11 @@ class MealController {
     }
   };
 
-  public static updateMeal = async (req: Request, res: Response, next: NextFunction) => {
+  public static updateMeal = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const { id } = req.params;
       const { value, error } = updateMealValidator.validate(req.body);
@@ -162,7 +169,12 @@ class MealController {
         data: value,
       });
 
-      res.status(200).json({ message: 'Meal updated successfully', data: { meal: updatedMeal } });
+      res
+        .status(200)
+        .json({
+          message: 'Meal updated successfully',
+          data: { meal: updatedMeal },
+        });
     } catch (error) {
       next({
         status: 500,
@@ -172,7 +184,11 @@ class MealController {
     }
   };
 
-  public static deleteMeal = async (req: Request, res: Response, next: NextFunction) => {
+  public static deleteMeal = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const { id } = req.params;
       const meal = await prisma.meal.findUnique({ where: { id } });
@@ -187,6 +203,32 @@ class MealController {
       await prisma.meal.delete({ where: { id } });
 
       res.status(200).json({ message: 'Meal deleted successfully' });
+    } catch (error) {
+      next({
+        status: 500,
+        message: 'Internal server error',
+        error,
+      });
+    }
+  };
+
+  public static getOrdersForChef = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { chefId } = req.params;
+      const orders = await prisma.order.findMany({
+        where: { chefId },
+        include: {
+          meal: true,
+          customer: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.status(200).json({ message: 'Orders Retreived', data: orders });
     } catch (error) {
       next({
         status: 500,

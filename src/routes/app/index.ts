@@ -12,7 +12,7 @@ import { Router } from "express";
 const router = Router();
 
 router.use("/public", PublicRoute);
-router.use('/private/chefs', isAuthenticated, isChef, ChefPrivateRoute);
-router.use('/private/customers', isAuthenticated, isCustomer, CustomerPrivateRoute);
+router.use('/private/chef-management', isAuthenticated, isChef, ChefPrivateRoute);
+router.use('/private/customer-management', isAuthenticated, isCustomer, CustomerPrivateRoute);
 
 export default router;

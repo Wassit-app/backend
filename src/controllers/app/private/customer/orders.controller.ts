@@ -76,32 +76,89 @@ export default class OrdersController {
   }
 
   // Get all orders
-  public static async getAllOrders(req: Request, res: Response) {
-    // TODO: Fetch orders from database
-    res.json({ message: 'Get all orders' });
+  public static async getOrdersForCustomer(req: Request, res: Response, next: NextFunction) {
+    try {
+      const customerId = req.user?.id;
+      if (!customerId) {
+        next({
+          status: 401,
+          message: 'Unauthorized: No customer ID',
+          error: { code: 'UNAUTHORIZED', details: 'No customer ID provided' },
+        });
+        return;
+      }
+
+      const orders = await prisma.order.findMany({
+        where: { customerId },
+        include: {
+          meal: true, // Include meal details
+          chef: true, // Include chef details
+        },
+      });
+
+      res.json({ message: 'Orders retrieved', data: orders });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error', error });
+    }
+    
   }
 
   // Get a single order by ID
-  public static async getOrderById(req: Request, res: Response) {
-    const { id } = req.params;
-    // TODO: Fetch order by id from database
-    res.json({ message: `Get order with id ${id}` });
+  public static async getOrderById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const order = await prisma.order.findUnique({
+        where: { id },
+        include: {
+          meal: true, // Include meal details
+          chef: true, // Include chef details
+          customer: true, // Include customer details
+        },
+      });
+
+      if (!order) {
+        next({
+          status: 404,
+          message: 'Order not found',
+          error: { code: 'ORDER_NOT_FOUND', details: ' No Order with this ID for you' },
+        });
+        return;
+      }
+
+      res.json({ message: 'Order retrieved', data: order });
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error', error });
+    }
+    
   }
 
   // Create a new order
 
   // Update an existing order
-  public static async updateOrder(req: Request, res: Response) {
-    const { id } = req.params;
-    const updateData = req.body;
-    // TODO: Update order in database
-    res.json({ message: `Order ${id} updated`, data: updateData });
-  }
-
   // Delete an order
-  public static async deleteOrder(req: Request, res: Response) {
-    const { id } = req.params;
-    // TODO: Delete order from database
-    res.json({ message: `Order ${id} deleted` });
+  public static async deleteOrder(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const order = await prisma.order.findUnique({ where: { id } });
+      if (!order) {
+        next({
+          status: 404,
+          message: 'Order not found',
+          error: { code: 'ORDER_NOT_FOUND', details: 'No Order with this ID for you' },
+        });
+        return;
+      }
+
+      await prisma.order.delete({ where: { id } });
+
+      res.status(200).json({ message: 'Order deleted successfully' });
+    } catch (error) {
+      next({
+        status: 500,
+        message: 'Internal server error',
+        error,
+      });
+    }
+    
   }
 }
