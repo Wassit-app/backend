@@ -24,6 +24,16 @@ export const typeDefs = gql`
     avgRating: Float!
   }
 
+  type Chef {
+    id: String!
+    address: String
+    bio: String
+    avgReviewScore: Float
+    totalReviews: Int
+    availableMeals: [Meal!]!
+    certification: String
+  }
+
   type Order {
     id: String!
     customerId: String!
@@ -38,11 +48,12 @@ export const typeDefs = gql`
     paymentStatus: Boolean
     paymentMethod: String
     meal: Meal
+    chef: Chef
   }
 
   type Query {
-    orders(customerId: String): [Order!]!
-    meals: [Meal!]!
+    orders(customerId: String, chefId: String, id: String): [Order!]!
+    meals(chefId: String, id: String): [Meal!]!
   }
 `;
 
@@ -62,28 +73,79 @@ const requireRole = (role: 'chef' | 'customer', context: any) => {
 // GraphQL resolvers
 export const resolvers = {
   Query: {
-    orders: async (_: any, args: { customerId?: string }, context: any) => {
+    orders: async (
+      _: any,
+      args: { customerId?: string; chefId?: string; id?: string },
+      context: any,
+    ) => {
       requireRole('customer', context); // Only customers can view orders
-      const where = args.customerId ? { customerId: args.customerId } : {};
-      return prisma.order.findMany({
-        where,
-        include: { meal: true },
-      });
+      // If customerId is provided, filter by customerId
+      if (args.customerId) {
+        const where = args.customerId ? { customerId: args.customerId } : {};
+        return prisma.order.findMany({
+          where,
+          include: { meal: true },
+        });
+      }
+      if (args.chefId) {
+        const where = args.chefId ? { chefId: args.chefId } : {};
+        return prisma.order.findMany({
+          where,
+          include: { meal: true },
+        });
+      }
+      // If id is provided, return a single order
+      if (args.id) {
+        return prisma.order.findUnique({
+          where: { id: args.id },
+          include: { meal: true },
+        });
+      }
     },
-    meals: async (_: any, __: any, context: any) => {
-      requireRole('chef', context); // Only chefs can view meals
-      return prisma.meal.findMany();
+    meals: async (
+      _: any,
+      args: { chefId?: string; id?: string },
+      context: any,
+    ) => {
+      // Allow both customers and chefs to access
+      if (!context.isChef && !context.isCustomer) {
+        throw new Error('Access denied: Must be customer or chef');
+      }
+      // If id is provided, return an array with the specific meal (to match return type [Meal!])
+      if (args.id) {
+        const meal = await prisma.meal.findUnique({ where: { id: args.id } });
+        return meal ? [meal] : [];
+      }
+      // If chefId is provided, return meals for that chefId (for both roles)
+      if (args.chefId) {
+        return await prisma.meal.findMany({ where: { chefId: args.chefId } });
+      }
+      if (context.isChef) {
+        // Chef: only get their own meals if no chefId is provided
+        return await prisma.meal.findMany({
+          where: { chefId: context.user.id },
+        });
+      }
+      // Customer: get all meals if no chefId is provided
+      return await prisma.meal.findMany();
     },
   },
   Order: {
     meal: (parent: any) => {
       return prisma.meal.findUnique({ where: { id: parent.mealId } });
     },
+    chef: (parent: any) => {
+      return prisma.chef.findUnique({ where: { id: parent.chefId } });
+    },
   },
 };
 
 // Compose role flags for context using your own middlewares
-const roleFlagMiddleware = (req: Request, res: Response, next: NextFunction) => {
+const roleFlagMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   let isChefResult = false;
   let isCustomerResult = false;
   if (req.user) {
