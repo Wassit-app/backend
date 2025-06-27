@@ -54,7 +54,7 @@ app.use((req, res, next) => {
 });
 
 // Apply GraphQL endpoint
-applyGraphQL(app);
+applyGraphQL(app, redisClient);
 
 // Routes
 app.use(

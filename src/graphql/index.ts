@@ -6,6 +6,7 @@ import { isAuthenticated } from '../middlewares/auth.middleware';
 import { isChef } from '../middlewares/isChef.middleware';
 import { isCustomer } from '../middlewares/isCustomer.middleware';
 import { Request, Response, NextFunction } from 'express';
+import Redis from 'ioredis';
 
 // GraphQL schema definition
 export const typeDefs = gql`
@@ -53,7 +54,7 @@ export const typeDefs = gql`
 
   type Query {
     orders(customerId: String, chefId: String, id: String): [Order!]!
-    meals(chefId: String, id: String): [Meal!]!
+    meals(chefId: String, id: String, page: Int, limit: Int): [Meal!]!
   }
 `;
 
@@ -104,21 +105,39 @@ export const resolvers = {
     },
     meals: async (
       _: any,
-      args: { chefId?: string; id?: string },
+      args: { chefId?: string; id?: string, page?: number, limit?: number },
       context: any,
     ) => {
+      const { chefId, id, page = 1, limit = 10 } = args;
+      const { RedisClient } = context;
+
       // Allow both customers and chefs to access
       if (!context.isChef && !context.isCustomer) {
         throw new Error('Access denied: Must be customer or chef');
       }
       // If id is provided, return an array with the specific meal (to match return type [Meal!])
-      if (args.id) {
+      if (id) {
         const meal = await prisma.meal.findUnique({ where: { id: args.id } });
         return meal ? [meal] : [];
       }
       // If chefId is provided, return meals for that chefId (for both roles)
-      if (args.chefId) {
-        return await prisma.meal.findMany({ where: { chefId: args.chefId } });
+      if (chefId) {
+        // return await prisma.meal.findMany({ where: { chefId: args.chefId } });
+        const cacheKey = `mealsByChef:${chefId}:${page}:${limit}`;
+        const cachedMeals = await RedisClient?.get(cacheKey);
+        if (cachedMeals) {
+          console.log(`Cache hit for ${cacheKey}`);
+          return JSON.parse(cachedMeals);
+        }
+        const skip = (page - 1) * limit;
+        const meals = await prisma.meal.findMany({
+          where: { chefId },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        });
+        await RedisClient?.setex(cacheKey, 300, JSON.stringify(meals));
+        return meals;
       }
       if (context.isChef) {
         // Chef: only get their own meals if no chefId is provided
@@ -154,12 +173,22 @@ const roleFlagMiddleware = (
   }
   (req as any).isChef = isChefResult;
   (req as any).isCustomer = isCustomerResult;
+  (req as any).RedisClient = req.RedisClient; // Ensure RedisClient is available in the request
   next();
 };
 
 // function to apply graphQL to Express app
-export async function applyGraphQL(app: any) {
-  app.use('/graphql', isAuthenticated, roleFlagMiddleware);
+export async function applyGraphQL(app: any, redisClient: Redis) {
+  
+  app.use(
+    '/graphql',
+    (req: Request, res: Response, next: NextFunction) => {
+      req.RedisClient = redisClient;
+      next();
+    },
+    isAuthenticated,
+    roleFlagMiddleware
+  );
 
   const server = new ApolloServer({
     typeDefs,
@@ -173,6 +202,7 @@ export async function applyGraphQL(app: any) {
         user: (req as any).user,
         isChef: (req as any).isChef,
         isCustomer: (req as any).isCustomer,
+        RedisClient: (req as any).RedisClient,
       }),
     }),
   );
