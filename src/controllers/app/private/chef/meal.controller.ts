@@ -4,6 +4,7 @@ import {
   updateMealValidator,
 } from '../../../../validator/app/chef/meal.validator';
 import { prisma } from '../../../../config/prisma';
+import logger from '../../../../utils/logger';
 
 class MealController {
   // Add methods for handling meal-related requests here
@@ -85,20 +86,50 @@ class MealController {
   ) => {
     try {
       const { chefId } = req.params;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const startIndex = (page - 1) * limit;
+
+      const cacheKey = `mealsByChef:${page}:${limit}`;
+      const cachedPosts = await req?.RedisClient?.get(cacheKey);
+      console.log('Cache posts:', cachedPosts);
+
+      if (cachedPosts) {
+        logger.info('Post retrieved from cache', { cacheKey });
+        res.json(JSON.parse(cachedPosts));
+        return;
+      }
+
       const chef = await prisma.chef.findUnique({ where: { id: chefId } });
       if (!chef) {
         res.status(404).json({
           message: 'Chef not found',
           error: { code: 'CHEF_NOT_FOUND' },
         });
+        return;
       }
 
-      const meals = await prisma.meal.findMany({
-        where: { chefId },
-        orderBy: { createdAt: 'desc' },
-      });
+      const [meals, total] = await Promise.all([
+        prisma.meal.findMany({
+          where: { chefId },
+          orderBy: { createdAt: 'desc' },
+          skip: (startIndex) * limit,
+          take: limit,
+        }),
+        prisma.meal.count({ where: { chefId } }),
+      ]);
+      // Cache the meals
+      await req?.RedisClient?.setex(cacheKey, 300, JSON.stringify(meals));
 
-      res.status(200).json({ meals });
+      res.status(200).json({
+        meals,
+        pagination: {
+          page: page,
+          pageSize: limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
     } catch (error) {
       next({
         status: 500,
@@ -169,12 +200,10 @@ class MealController {
         data: value,
       });
 
-      res
-        .status(200)
-        .json({
-          message: 'Meal updated successfully',
-          data: { meal: updatedMeal },
-        });
+      res.status(200).json({
+        message: 'Meal updated successfully',
+        data: { meal: updatedMeal },
+      });
     } catch (error) {
       next({
         status: 500,
@@ -235,6 +264,18 @@ class MealController {
         message: 'Internal server error',
         error,
       });
+    }
+  };
+  private static invalidatePostCashe = async (req: Request, input: string) => {
+    const cashedKey = `posts:${input}`;
+    await req?.RedisClient?.del(cashedKey);
+
+    const keys = await req?.RedisClient?.keys('posts:*');
+    if (!keys) {
+      return logger.error('Keys is underfined');
+    }
+    if (keys.length > 0) {
+      await req?.RedisClient?.del(keys);
     }
   };
 }

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import Redis from 'ioredis';
 
 declare global {
   namespace Express {
@@ -8,6 +9,7 @@ declare global {
     }
     interface Request {
       user?: User;
+      RedisClient: Redis
     }
   }
 }
