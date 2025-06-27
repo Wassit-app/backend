@@ -7,7 +7,7 @@ import AppRoutes from './routes/router'
 import passport from 'passport';
 import logger from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
-
+import { applyGraphQL } from './graphql';
 
 const app = express();
 
@@ -28,7 +28,8 @@ app.use((req, res, next) => {
   next();
 });
 
-
+// Apply GraphQL endpoint
+applyGraphQL(app);
 
 // Routes
 app.use('/api', AppRoutes);
