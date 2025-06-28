@@ -14,6 +14,22 @@ datasource db {
   // shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
+model Review {
+  id         String   @id @default(uuid())
+  customerId String
+  chefId     String
+  orderId    String   @unique
+  mealId     String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  chef     Chef     @relation(fields: [chefId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id])
+  meal     Meal     @relation(fields: [mealId], references: [id])
+}
+
 model User {
   id            String    @id @default(uuid())
   username      String    @unique
@@ -38,6 +54,7 @@ model Customer {
   deliveryAddress String?
   favoriteMeals   String[]
   recentOrders    String[]
+  reviews         Review[]
   user            User     @relation(fields: [id], references: [id])
 
   orders Order[]
@@ -51,6 +68,7 @@ model Chef {
   totalReviews   Int?     @default(0)
   availableMeals String[]
   certification  String?
+  reviews        Review[]
   user           User     @relation(fields: [id], references: [id])
 
   meals  Meal[]
@@ -70,6 +88,7 @@ model Meal {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   avgRating       Float?       @default(0.0)
+  reviews         Review[]
 
   chef   Chef    @relation(fields: [chefId], references: [id])
   orders Order[]
@@ -88,6 +107,7 @@ model Order {
   specialInstructions String?
   paymentStatus       Boolean       @default(false)
   paymentMethod       PaymentMethod
+  review              Review?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
@@ -103,6 +123,7 @@ enum MealCategory {
   TRADITIONAL
   FASTFOOD
   DESSERT
+  SWEETS
 }
 
 enum Role {
