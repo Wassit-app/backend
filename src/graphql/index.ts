@@ -53,8 +53,8 @@ export const typeDefs = gql`
   }
 
   type Query {
-    orders(customerId: String, chefId: String, id: String): [Order!]!
-    meals(chefId: String, id: String, page: Int, limit: Int): [Meal!]!
+    orders(customerId: String, chefId: String, id: String, page: Int, limit: Int): [Order!]!
+    meals(chefId: String, id: String, category: String, page: Int, limit: Int): [Meal!]!
   }
 `;
 
@@ -76,39 +76,78 @@ export const resolvers = {
   Query: {
     orders: async (
       _: any,
-      args: { customerId?: string; chefId?: string; id?: string },
+      args: { customerId?: string; chefId?: string; id?: string; page?: number; limit?: number },
       context: any,
     ) => {
       requireRole('customer', context); // Only customers can view orders
-      // If customerId is provided, filter by customerId
-      if (args.customerId) {
-        const where = args.customerId ? { customerId: args.customerId } : {};
-        return prisma.order.findMany({
-          where,
+      const { customerId, chefId, id, page = 1, limit = 10 } = args;
+      const { RedisClient } = context;
+
+      // If id is provided, return a single order (as array for consistency)
+      if (id) {
+        const cacheKey = `orderById:${id}`;
+        const cachedOrder = await RedisClient?.get(cacheKey);
+        if (cachedOrder) {
+          console.log(`Cache hit for ${cacheKey}`);
+          return [JSON.parse(cachedOrder)];
+        }
+        const order = await prisma.order.findUnique({
+          where: { id },
           include: { meal: true },
         });
+        if (order) await RedisClient?.setex(cacheKey, 300, JSON.stringify(order));
+        return order ? [order] : [];
       }
-      if (args.chefId) {
-        const where = args.chefId ? { chefId: args.chefId } : {};
-        return prisma.order.findMany({
-          where,
+
+      // If customerId is provided, filter by customerId with pagination
+      if (customerId) {
+        const cacheKey = `ordersByCustomer:${customerId}:${page}:${limit}`;
+        const cachedOrders = await RedisClient?.get(cacheKey);
+        if (cachedOrders) {
+          console.log(`Cache hit for ${cacheKey}`);
+          return JSON.parse(cachedOrders);
+        }
+        const skip = (page - 1) * limit;
+        const orders = await prisma.order.findMany({
+          where: { customerId },
           include: { meal: true },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
         });
+        await RedisClient?.setex(cacheKey, 300, JSON.stringify(orders));
+        return orders;
       }
-      // If id is provided, return a single order
-      if (args.id) {
-        return prisma.order.findUnique({
-          where: { id: args.id },
+
+      // If chefId is provided, filter by chefId with pagination
+      if (chefId) {
+        const cacheKey = `ordersByChef:${chefId}:${page}:${limit}`;
+        const cachedOrders = await RedisClient?.get(cacheKey);
+        if (cachedOrders) {
+          console.log(`Cache hit for ${cacheKey}`);
+          return JSON.parse(cachedOrders);
+        }
+        const skip = (page - 1) * limit;
+        const orders = await prisma.order.findMany({
+          where: { chefId },
           include: { meal: true },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
         });
+        await RedisClient?.setex(cacheKey, 300, JSON.stringify(orders));
+        return orders;
       }
+
+      // Default: return all orders (not recommended, but fallback)
+      return [];
     },
     meals: async (
       _: any,
-      args: { chefId?: string; id?: string, page?: number, limit?: number },
+      args: { chefId?: string; id?: string, category?: string, page?: number, limit?: number },
       context: any,
     ) => {
-      const { chefId, id, page = 1, limit = 10 } = args;
+      const { chefId, id, category, page = 1, limit = 10 } = args;
       const { RedisClient } = context;
 
       // Allow both customers and chefs to access
@@ -117,7 +156,14 @@ export const resolvers = {
       }
       // If id is provided, return an array with the specific meal (to match return type [Meal!])
       if (id) {
+        const cacheKey = `mealById:${id}`;
+        const cachedMeal = await RedisClient?.get(cacheKey);
+        if (cachedMeal) {
+          console.log(`Cache hit for ${cacheKey}`);
+          return JSON.parse(cachedMeal);
+        }
         const meal = await prisma.meal.findUnique({ where: { id: args.id } });
+        await RedisClient?.setex(cacheKey, 300, JSON.stringify(meal));
         return meal ? [meal] : [];
       }
       // If chefId is provided, return meals for that chefId (for both roles)
@@ -132,6 +178,24 @@ export const resolvers = {
         const skip = (page - 1) * limit;
         const meals = await prisma.meal.findMany({
           where: { chefId },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take: limit,
+        });
+        await RedisClient?.setex(cacheKey, 300, JSON.stringify(meals));
+        return meals;
+      }
+      // If category is provided, filter meals by category
+      if (category) {
+        const cacheKey = `mealsByCategory:${category}:${page}:${limit}`;
+        const cachedMeals = await RedisClient?.get(cacheKey);
+        if (cachedMeals) {
+          console.log(`Cache hit for ${cacheKey}`);
+          return JSON.parse(cachedMeals);
+        }
+        const skip = (page - 1) * limit;
+        const meals = await prisma.meal.findMany({
+          where: { category: category as any }, // Cast to enum type if necessary
           orderBy: { createdAt: 'desc' },
           skip,
           take: limit,
