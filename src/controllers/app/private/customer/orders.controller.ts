@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { prisma } from '../../../../config/prisma';
 import { OrderSchema } from '../../../../validator/app/customer/orders.validator';
+import { updateCustomerLocationSchema } from '../../../../validator/app/customer/meals.validator';
+import { isValidCoordinates } from '../../../../utils/location.util';
 
 export default class OrdersController {
   public static async createOrder(
@@ -160,5 +162,77 @@ export default class OrdersController {
       });
     }
     
+  }
+
+  /**
+   * Update customer location coordinates
+   */
+  public static async updateCustomerLocation(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const customerId = req.user?.id;
+      if (!customerId) {
+        next({
+          status: 401,
+          message: 'Unauthorized: No customer ID',
+          error: { code: 'UNAUTHORIZED', details: 'No customer ID provided' },
+        });
+        return;
+      }
+
+      const { value, error } = updateCustomerLocationSchema.validate(req.body);
+      if (error) {
+        next({
+          status: 400,
+          message: error.details[0].message,
+          error: {
+            code: 'VALIDATION_ERROR',
+            details: error.details[0].message,
+          },
+        });
+        return;
+      }
+
+      const { latitude, longitude } = value;
+
+      // Validate coordinates
+      if (!isValidCoordinates(latitude, longitude)) {
+        next({
+          status: 400,
+          message: 'Invalid coordinates provided',
+          error: {
+            code: 'INVALID_COORDINATES',
+            details: 'Latitude must be between -90 and 90, longitude between -180 and 180',
+          },
+        });
+        return;
+      }
+
+      // Update customer location
+      const updatedCustomer = await prisma.customer.update({
+        where: { id: customerId },
+        data: {
+          latitude,
+          longitude,
+        },
+      });
+
+      res.status(200).json({
+        message: 'Customer location updated successfully',
+        data: {
+          latitude: updatedCustomer.latitude,
+          longitude: updatedCustomer.longitude,
+        },
+      });
+    } catch (error) {
+      next({
+        status: 500,
+        message: 'Internal server error',
+        error,
+      });
+    }
   }
 }

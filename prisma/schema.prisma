@@ -52,6 +52,8 @@ model User {
 model Customer {
   id              String   @id
   deliveryAddress String?
+  latitude        Float?   // Add latitude for location-based filtering
+  longitude       Float?   // Add longitude for location-based filtering
   favoriteMeals   String[]
   recentOrders    String[]
   reviews         Review[]
@@ -63,6 +65,8 @@ model Customer {
 model Chef {
   id             String   @id
   address        String?
+  latitude       Float?   // Add latitude for location-based filtering
+  longitude      Float?   // Add longitude for location-based filtering
   bio            String?
   avgReviewScore Float?   @default(0.0)
   totalReviews   Int?     @default(0)

@@ -42,4 +42,6 @@ router.get("/auth/google/callback",
     }
 );
 
+// Include meals routes
+
 export default router;

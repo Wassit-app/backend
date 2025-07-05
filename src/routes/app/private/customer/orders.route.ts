@@ -8,6 +8,8 @@ router.post("/orders", OrdersController.createOrder);
 router.get("/orders/:id", OrdersController.getOrderById);
 router.delete("/orders/:id", OrdersController.deleteOrder);
 router.get("/orders/customer/:customerId", OrdersController.getOrdersForCustomer);
+router.put("/location", OrdersController.updateCustomerLocation);
+
 
 
 

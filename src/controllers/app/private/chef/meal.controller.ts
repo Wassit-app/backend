@@ -5,6 +5,7 @@ import {
 } from '../../../../validator/app/chef/meal.validator';
 import { prisma } from '../../../../config/prisma';
 import logger from '../../../../utils/logger';
+import { isValidCoordinates } from '../../../../utils/location.util';
 
 class MealController {
   // Add methods for handling meal-related requests here
