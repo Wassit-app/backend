@@ -103,6 +103,7 @@ export function parseLocationString(locationString: string): Location | null {
     }
   } catch (error) {
     // Invalid format
+    console.error('Error parsing location string:', error);
   }
   return null;
-} 
+}

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import MealController from '../../../../controllers/app/private/chef/meal.controller';
+import MealController from '../../../../../controllers/v1/app/private/chef/meal.controller';
 
 const router = Router();
 

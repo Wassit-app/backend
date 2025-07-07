@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import PublicMealsController from '../../../../controllers/app/private/customer/meals.controller';
+import PublicMealsController from '../../../../../controllers/v1/app/private/customer/meals.controller';
 
 const router = Router();
 
@@ -7,4 +7,4 @@ const router = Router();
 router.get('/meals/search', PublicMealsController.searchMealsByLocation);
 router.get('/meals/:id', PublicMealsController.getMealDetails);
 
-export default router; 
+export default router;

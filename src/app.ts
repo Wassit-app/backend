@@ -7,7 +7,7 @@ import { rateLimit } from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import cookieParser from 'cookie-parser';
-import AppRoutes from './routes/router';
+import AppRoutes from './routes/v1/router';
 import passport from 'passport';
 import logger from './utils/logger';
 import { errorHandler } from './middlewares/errorHandler';
@@ -58,7 +58,7 @@ applyGraphQL(app, redisClient);
 
 // Routes
 app.use(
-  '/api',
+  '/api/v1',
   (req: Request, res: Response, next: NextFunction) => {
     req.RedisClient = redisClient;
     next();
