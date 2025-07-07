@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { confirmResetPasswordSchema, loginSchema, registrationSchema, resetPasswordRequestSchema, validateRegistrationSchema } from "../../../validator/app/auth.validator";
-import { prisma } from "../../../config/prisma";
+import { confirmResetPasswordSchema, loginSchema, registrationSchema, resetPasswordRequestSchema, validateRegistrationSchema } from "../../../../validator/app/auth.validator";
+import { prisma } from "../../../../config/prisma";
 import bcrypt from "bcrypt";
-import HashService from "../../../service/hash";
-import OtpGenerator from "../../../algorithm/otp.alg";
-import SMTPService from "../../../service/smtp";
-import TokenService from "../../../service/jwt";
+import HashService from "../../../../service/hash";
+import OtpGenerator from "../../../../algorithm/otp.alg";
+import SMTPService from "../../../../service/smtp";
+import TokenService from "../../../../service/jwt";
 
 
 class AuthController {

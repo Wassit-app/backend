@@ -2,10 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import {
   mealValidator,
   updateMealValidator,
-} from '../../../../validator/app/chef/meal.validator';
-import { prisma } from '../../../../config/prisma';
-import logger from '../../../../utils/logger';
-import { isValidCoordinates } from '../../../../utils/location.util';
+} from '../../../../../validator/app/chef/meal.validator';
+import { prisma } from '../../../../../config/prisma';
+import logger from '../../../../../utils/logger';
 
 class MealController {
   // Add methods for handling meal-related requests here

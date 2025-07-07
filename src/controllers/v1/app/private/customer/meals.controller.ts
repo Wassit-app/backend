@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../../../../config/prisma';
-import { searchMealsByLocationSchema } from '../../../../validator/app/customer/meals.validator';
-import { calculateDistance, isValidCoordinates } from '../../../../utils/location.util';
-import logger from '../../../../utils/logger';
+import { prisma } from '../../../../../config/prisma';
+import { searchMealsByLocationSchema } from '../../../../../validator/app/customer/meals.validator';
+import { calculateDistance, isValidCoordinates } from '../../../../../utils/location.util';
+import logger from '../../../../../utils/logger';
 
 export default class PublicMealsController {
   /**

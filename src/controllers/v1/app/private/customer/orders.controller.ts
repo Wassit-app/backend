@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import { prisma } from '../../../../config/prisma';
-import { OrderSchema } from '../../../../validator/app/customer/orders.validator';
-import { updateCustomerLocationSchema } from '../../../../validator/app/customer/meals.validator';
-import { isValidCoordinates } from '../../../../utils/location.util';
+import { prisma } from '../../../../../config/prisma';
+import { OrderSchema } from '../../../../../validator/app/customer/orders.validator';
+import { updateCustomerLocationSchema } from '../../../../../validator/app/customer/meals.validator';
+import { isValidCoordinates } from '../../../../../utils/location.util';
 
 export default class OrdersController {
   public static async createOrder(
