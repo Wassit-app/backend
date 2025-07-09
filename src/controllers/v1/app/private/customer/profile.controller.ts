@@ -3,26 +3,58 @@ import { ProfileValidator } from '../../../../../validator/app/customer/profile.
 import { prisma } from '../../../../../config/prisma';
 import HashService from '../../../../../service/hash';
 
-
 export default class CustomerProfileController {
   // Method to get customer profile
   static async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const customerId = req.user?.id;
       if (!customerId) {
-        next({ 
-            status: 401,
-            message: 'Unauthorized: No customer ID', 
-            error: { code: 'UNAUTHORIZED', details: 'No customer ID provided' },
+        next({
+          status: 401,
+          message: 'Unauthorized: No customer ID',
+          error: { code: 'UNAUTHORIZED', details: 'No customer ID provided' },
         });
         return;
       }
-      
+      const cacheKey = `customerId:${customerId}`;
+      const cachedCustomer = await req.RedisClient?.get(cacheKey);
+      if (cachedCustomer) {
+        console.log(`Cache hit for ${cacheKey}`);
+        res.status(200).json({
+          message: 'Get Profile Success (cache)',
+          data: JSON.parse(cachedCustomer),
+        });
+        return;
+      }
+
+      const data = await prisma.user.findUnique({
+        where: { id: customerId },
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          isVerified: true,
+          role: true,
+          createdAt: true,
+          customer: {
+            select: {
+              deliveryAddress: true,
+              latitude: true,
+              longitude: true,
+              favoriteMeals: true,
+              recentOrders: true,
+            },
+          },
+        },
+      });
+
+      await req.RedisClient?.setex(cacheKey, 300, JSON.stringify(data));
+
       res.status(200).json({
         message: 'Get Profile Success',
-        data: {
-          ...req.user,
-        },
+        data,
       });
     } catch (error) {
       console.error('ProfileController.getProfile', error);
