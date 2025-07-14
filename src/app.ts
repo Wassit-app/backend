@@ -17,12 +17,12 @@ const app = express();
 
 const redisClient = new Redis(process.env.REDIS_URL as string);
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-  }),
-);
+// Simple CORS for development
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true
+}));
+
 app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(express.json());
@@ -30,7 +30,9 @@ app.use(helmet());
 
 app.use((req, res, next) => {
   logger.info(`Received ${req.method} request to ${req.url}`);
-  logger.info(`Request body: ${req.body}`);
+  logger.info(`Request headers: ${JSON.stringify(req.headers)}`);
+  logger.info(`Request origin: ${req.headers.origin}`);
+  logger.info(`Request body: ${JSON.stringify(req.body)}`);
   next();
 });
 
