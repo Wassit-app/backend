@@ -6,7 +6,7 @@ declare global {
     interface IUser {
       id: string;
       email: string;
-      role: 'CUSTOMER' | 'CHEF';
+      role: 'customer' | 'chef';
     }
     interface Request {
       user?: IUser;

@@ -8,7 +8,7 @@ export const ProfileValidator = Joi.object({
   password: Joi.string(),
   oauthProvider: Joi.string().allow(null),
   oauthId: Joi.string().allow(null),
-  role: Joi.string().valid('CUSTOMER', 'CHEF'),
+  role: Joi.string().valid('customer', 'chef'),
   deliveryAddress: Joi.string().allow(null),
   latitude: Joi.number().allow(null),
   longitude: Joi.number().allow(null),

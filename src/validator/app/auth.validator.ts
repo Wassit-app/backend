@@ -6,7 +6,7 @@ const baseSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().min(6).required(),
   phone: Joi.string().optional(),
-  role: Joi.string().valid("CUSTOMER", "CHEF").required(),
+  role: Joi.string().valid("customer", "chef").required(),
 
   // Common fields
   address: Joi.string().optional(), // used for both roles but named differently
@@ -20,14 +20,14 @@ const chefSchema = Joi.object({
   avgReviewScore: Joi.number().optional(),
   totalReviews: Joi.number().optional(),
   certification: Joi.string(),
-}).when(Joi.object({ role: Joi.string().valid("CHEF") }).unknown(), {
+}).when(Joi.object({ role: Joi.string().valid("chef") }).unknown(), {
   then: Joi.required(),
 });
 
 // Customer-specific schema
 const customerSchema = Joi.object({
   deliveryAddress: Joi.string(),
-}).when(Joi.object({ role: Joi.string().valid("CUSTOMER") }).unknown(), {
+}).when(Joi.object({ role: Joi.string().valid("customer") }).unknown(), {
   then: Joi.required(),
 });
 
@@ -38,7 +38,7 @@ export const validateRegistrationSchema = Joi.object({
 
 export const loginSchema = Joi.object({
   email: Joi.string().email().required(),
-  role: Joi.string().valid("CUSTOMER", "CHEF").required(),
+  role: Joi.string().valid("customer", "chef").required(),
   password: Joi.string().min(6).required(),
 })
 

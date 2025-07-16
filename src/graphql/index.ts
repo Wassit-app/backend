@@ -232,8 +232,8 @@ const roleFlagMiddleware = (
   let isChefResult = false;
   let isCustomerResult = false;
   if (req.user) {
-    if (req.user.role === 'CHEF') isChefResult = true;
-    if (req.user.role === 'CUSTOMER') isCustomerResult = true;
+    if (req.user.role === 'chef') isChefResult = true;
+    if (req.user.role === 'customer') isCustomerResult = true;
   }
   (req as any).isChef = isChefResult;
   (req as any).isCustomer = isCustomerResult;

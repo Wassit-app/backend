@@ -15,7 +15,7 @@ declare global {
 }
 
 export const isChef = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user?.role !== 'CHEF') {
+  if (req.user?.role !== 'chef') {
     res.status(403).json({ message: 'Access denied: Chef role required' });
     return;
   }

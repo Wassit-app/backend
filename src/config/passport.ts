@@ -41,7 +41,7 @@ passport.use(new GoogleStrategy({
           password: '', // Empty password for OAuth users
           fullName: profile.displayName || email.split('@')[0],
           isVerified: true,
-          role: 'CUSTOMER',
+          role: 'customer',
           oauthProvider: 'google',
           oauthId: profile.id
         },
@@ -57,8 +57,8 @@ passport.use(new GoogleStrategy({
 
     // Generate tokens
     const tokens = {
-      accessToken: TokenService.generateToken(user, "CUSTOMER"),
-      refreshToken: TokenService.generateToken(user, "CUSTOMER", "7d"),
+      accessToken: TokenService.generateToken(user, "customer"),
+      refreshToken: TokenService.generateToken(user, "customer", "7d"),
     };
 
     return done(null, { user, tokens });

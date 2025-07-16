@@ -85,7 +85,7 @@ class AuthController {
       }
 
       // Create specific data for role
-      if (value.role === 'CHEF') {
+      if (value.role === 'chef') {
         await prisma.chef.upsert({
           where: { id: newUser.id },
           update: {
@@ -103,7 +103,7 @@ class AuthController {
             availableMeals: [],
           },
         });
-      } else if (value.role === 'CUSTOMER') {
+      } else if (value.role === 'customer') {
         await prisma.customer.upsert({
           where: { id: newUser.id },
           update: {
@@ -223,6 +223,7 @@ class AuthController {
           fullName: true,
           email: true,
           phone: true,
+          createdAt: true,
         },
       });
 
@@ -282,6 +283,7 @@ class AuthController {
           phone: true,
           password: true,
           role: true,
+          createdAt: true,
           isVerified: true,
         },
       });
@@ -307,6 +309,18 @@ class AuthController {
           error: {
             code: 'INVALID_PASSWORD',
             details: 'The provided password is incorrect',
+          },
+        });
+        return;
+      }
+
+      if (user.role !== value.role) {
+        next({
+          status: 401,
+          message: 'Role mismatch',
+          error: {
+            code: 'ROLE_MISMATCH',
+            details: 'The provided role is incorrect',
           },
         });
         return;
@@ -578,6 +592,7 @@ class AuthController {
           email: true,
           phone: true,
           role: true,
+          createdAt: true,
           isVerified: true,
         },
       });
